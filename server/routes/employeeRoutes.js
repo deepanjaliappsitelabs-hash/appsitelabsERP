@@ -3,7 +3,7 @@ const { protect, adminOnly } = require("../middleware/authMiddleware");
 const {
   getEmployees,
   getEmployee,
-  addEmployee,      // ← createEmployee nahi, addEmployee hai
+  addEmployee,      // Uses addEmployee instead of createEmployee
   updateEmployee,
   deleteEmployee,
 } = require("../controllers/employeeController");

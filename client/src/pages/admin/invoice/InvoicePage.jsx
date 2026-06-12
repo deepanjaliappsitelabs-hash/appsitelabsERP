@@ -171,7 +171,7 @@ export default function InvoicePage({ adminMode = false, viewMode = false }) {
   async function onSave() {
     if (saving) return;
     if (!user?.uid) {
-      setError("Login session missing hai. Please logout karke dobara login karo, phir invoice save karo.");
+      setError("Login session is missing. Please log out, log in again, and then save the invoice.");
       return;
     }
     setSaving(true);

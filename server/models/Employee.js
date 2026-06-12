@@ -31,13 +31,13 @@ const normalizeEmployee = (data) => ({
   photo: data.photo || "",
 });
 
-// Sabhi employees lao
+// Fetch all employees.
 const getAllEmployees = async () => {
   const [rows] = await pool.query("SELECT * FROM employees");
   return rows;
 };
 
-// Ek employee lao ID se
+// Fetch one employee by ID.
 const getEmployeeById = async (id) => {
   const [rows] = await pool.query(
     "SELECT * FROM employees WHERE id = ?", [id]
@@ -45,7 +45,7 @@ const getEmployeeById = async (id) => {
   return rows[0];
 };
 
-// Naya employee banao
+// Create a new employee.
 const createEmployee = async (data) => {
   const employee = normalizeEmployee(data);
   const {
@@ -147,7 +147,7 @@ const createEmployee = async (data) => {
   }
 };
 
-// Employee update karo
+// Update an employee.
 const updateEmployee = async (id, data) => {
   const {
     employeeId,
@@ -231,7 +231,7 @@ const updateEmployee = async (id, data) => {
   }
 };
 
-// Employee delete karo
+// Delete an employee.
 const deleteEmployee = async (id) => {
   const conn = await pool.getConnection();
   try {

@@ -10,6 +10,7 @@ const columns = [
   "Check-out",
   "Hours",
   "Status",
+  "Note",
   "Actions",
 ];
 
@@ -29,6 +30,7 @@ function EditModal({ record, onSave, onClose }) {
     checkOut: record.checkOut || "",
     hours: record.hours || "",
     status: record.status || "Present",
+    lateNote: record.lateNote || "",
   });
 
   const handleChange = (e) =>
@@ -88,6 +90,19 @@ function EditModal({ record, onSave, onClose }) {
               ))}
             </select>
           </label>
+
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold text-slate-700">Late login note</span>
+            <textarea
+              name="lateNote"
+              value={form.lateNote}
+              onChange={handleChange}
+              rows={3}
+              maxLength={300}
+              placeholder="Reason for late check-in"
+              className="w-full resize-none rounded-xl border border-[#E0E3EC] px-3 py-2.5 text-sm outline-none focus:border-[#5B3FD6] focus:ring-4 focus:ring-[#5B3FD6]/10"
+            />
+          </label>
         </div>
 
         <div className="mt-6 flex justify-end gap-3">
@@ -136,6 +151,15 @@ function AttendanceTable({ records = [], onUpdate, onDelete }) {
               <Badge variant={statusVariant[item.status] || "neutral"}>
                 {item.status || "Unknown"}
               </Badge>
+            </td>
+            <td className="px-4 py-4">
+              {item.lateNote ? (
+                <p className="max-w-xs rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium leading-relaxed text-amber-700">
+                  {item.lateNote}
+                </p>
+              ) : (
+                <span className="text-sm text-slate-400">-</span>
+              )}
             </td>
             <td className="px-4 py-4">
               <div className="flex gap-2">

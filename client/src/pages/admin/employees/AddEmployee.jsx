@@ -160,23 +160,23 @@ function AddEmployee() {
     const hasFullDob = dobParts.day && dobParts.month && dobParts.year;
 
     if (hasPartialDob && !hasFullDob) {
-      toast.error("DOB ke liye date, month aur year teeno select karo");
+      toast.error("Select date, month, and year for DOB");
       return false;
     }
 
     const dob = joinIsoDate(dobParts);
     if (dob && dob > new Date().toISOString().slice(0, 10)) {
-      toast.error("DOB future date nahi ho sakti");
+      toast.error("DOB cannot be a future date");
       return false;
     }
 
     if (formData.phone && phoneDigits.length !== 10) {
-      toast.error("Phone number 10 digits ka hona chahiye");
+      toast.error("Phone number must be 10 digits");
       return false;
     }
 
     if (formData.emergencyContact && emergencyDigits.length !== 10) {
-      toast.error("Emergency contact 10 digits ka hona chahiye");
+      toast.error("Emergency contact must be 10 digits");
       return false;
     }
 
@@ -236,7 +236,7 @@ function AddEmployee() {
         photoFile: file,
       }));
     };
-    reader.onerror = () => toast.error("Photo preview load nahi hua, please try again");
+    reader.onerror = () => toast.error("Photo preview could not be loaded. Please try again");
     reader.readAsDataURL(file);
     e.target.value = "";
   };

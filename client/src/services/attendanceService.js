@@ -21,6 +21,7 @@ const normalize = (rec) => ({
   checkIn: rec.checkIn || rec.check_in || "",
   checkOut: rec.checkOut || rec.check_out || "",
   hours: rec.hours || rec.total_hours || "",
+  lateNote: rec.lateNote || rec.late_note || rec.note || rec.reason || "",
   status: toTitleStatus(rec.status),
 });
 
@@ -36,7 +37,7 @@ export const getAttendanceByEmployee = async (employeeId) => {
   return Array.isArray(list) ? list.map(normalize) : [];
 };
 
-// Mark attendance — backend ka POST /checkin use karta hai
+// Mark attendance through the backend POST /checkin route.
 export const markAttendance = async (attendanceData) => {
   const res = await api.post("/attendance/checkin", attendanceData);
   const rec = res.data?.data ?? res.data;

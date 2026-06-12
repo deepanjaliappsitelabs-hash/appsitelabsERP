@@ -15,6 +15,7 @@ const initialState = {
   checkOutPeriod: "PM",
   hours: "8h 30m",
   status: "Present",
+  lateNote: "",
 };
 
 const to12HourTime = (time) => {
@@ -183,6 +184,20 @@ function MarkAttendanceModal({
           period={formData.checkOutPeriod}
           onChange={handleChange}
         />
+        <label className="block md:col-span-2">
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            Late login note
+          </span>
+          <textarea
+            name="lateNote"
+            value={formData.lateNote}
+            onChange={handleChange}
+            rows={3}
+            maxLength={300}
+            placeholder="Add a reason or note for this attendance record"
+            className="w-full resize-none rounded-xl border border-[#E0E3EC] bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-[#7560A7] focus:ring-4 focus:ring-[#302568]/10"
+          />
+        </label>
         <div className="flex justify-end gap-3 md:col-span-2">
           <button
             type="button"

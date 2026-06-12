@@ -97,7 +97,7 @@ function Payroll() {
 
   // ── Generate payroll ────────────────────────────────────────────────────────
   const handleGenerate = async () => {
-    if (!genForm.month) { toast.error("Month select karo"); return; }
+    if (!genForm.month) { toast.error("Select a month"); return; }
     try {
       setGenerating(true);
       const selected   = monthOptions.find((m) => m.value === genForm.month);
@@ -212,7 +212,7 @@ function Payroll() {
   // Auto-calculate breakdown when employee or override salary changes
   useEffect(() => {
     if (!selectedEmp && !genForm.overrideSalary) { setBreakdownTouched(false); return; }
-    if (breakdownTouched) return; // Admin ne manually edit kiya hai — override mat karo
+    if (breakdownTouched) return; // The admin edited this manually, so do not override it.
     const base = genForm.overrideSalary
       ? Number(genForm.overrideSalary)
       : Number(selectedEmp?.salary || 0);

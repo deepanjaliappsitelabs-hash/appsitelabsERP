@@ -65,7 +65,7 @@ function Employees() {
       const data = await getEmployees();
       setEmployees(data);
     } catch (err) {
-      toast.error("Employees load nahi hue: " + (err.response?.data?.message || err.message));
+      toast.error("Employees could not be loaded: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -121,7 +121,7 @@ function Employees() {
       documents:        parseDocuments(employee.documents),
       photo:            employee.photo || "",
     });
-    // _id already normalize ho chuka hai employeeService mein
+    // _id is already normalized in employeeService.
     setEditId(employee._id);
     setShowModal(true);
   };

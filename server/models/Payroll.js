@@ -1,7 +1,7 @@
 // server/models/Payroll.js
 const pool = require("../config/db");
 
-// ── Salary breakdown calculate karo ──────────────────────────────────────────
+// ── Calculate salary breakdown ────────────────────────────────────────────────
 function calcBreakdown(salary) {
   const basic       = Math.round(salary * 0.50);   // 50% of CTC
   const hra         = Math.round(salary * 0.20);   // 20%

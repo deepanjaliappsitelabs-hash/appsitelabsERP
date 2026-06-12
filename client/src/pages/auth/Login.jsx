@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-// ── Subdomain detect karo ─────────────────────────────────────────────────────
+// ── Detect subdomain ──────────────────────────────────────────────────────────
 const hostname  = window.location.hostname;      // "admin.localhost" | "erp.localhost" | "localhost"
 const subdomain = hostname.split(".")[0];         // "admin" | "erp" | "localhost"
 
@@ -68,7 +68,7 @@ function Login() {
       }
       // ─────────────────────────────────────────────────────────────────────
 
-      // ✅ Store karo
+      // Store session data.
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify({
         id:           data.id || data._id || data.employeeId || data.email,

@@ -1,7 +1,7 @@
 // server/scripts/createPayrollTable.js
-// Run: node scripts/createPayrollTable.js  (server/ folder se)
+// Run from the server folder: node scripts/createPayrollTable.js
 
-// require("dotenv").config({ path: "../.env" }); // server ke .env se
+// require("dotenv").config({ path: "../.env" }); // Load from server .env
 
 const mysql = require("mysql2/promise");
 

@@ -6,7 +6,7 @@ const api = axios.create({
     : "http://localhost:5000/api",
 });
 
-// ── Request interceptor — token attach karo ───────────────────────────────────
+// ── Request interceptor - attach token ────────────────────────────────────────
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -18,12 +18,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ── Response interceptor — 401 pe auto logout ─────────────────────────────────
+// ── Response interceptor - auto logout on 401 ─────────────────────────────────
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expire ya invalid — logout karo
+      // Logout when the token is expired or invalid.
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/";

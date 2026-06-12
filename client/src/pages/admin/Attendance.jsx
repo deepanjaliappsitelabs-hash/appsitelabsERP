@@ -14,6 +14,7 @@ import {
   deleteAttendance,
   getAttendance,
   markAttendance,
+  updateAttendance,
 } from "../../services/attendanceService";
 import { getEmployees } from "../../services/employeeService";
 import exportToExcel from "../../utils/exportToExcel";
@@ -45,7 +46,7 @@ function Attendance() {
         setRecords(attendanceData);
         setEmployees(employeeData);
       } catch (err) {
-        toast.error("Data load nahi hua: " + (err.response?.data?.message || err.message));
+        toast.error("Data could not be loaded: " + (err.response?.data?.message || err.message));
       } finally {
         setLoading(false);
       }
@@ -99,15 +100,21 @@ function Attendance() {
     }
   };
 
-  const handleUpdateRecord = (updated) => {
-    setRecords((current) =>
-      current.map((r) =>
-        (r._id && r._id === updated._id) ||
-        (r.employeeName === updated.employeeName && r.date === updated.date)
-          ? updated
-          : r
-      )
-    );
+  const handleUpdateRecord = async (updated) => {
+    try {
+      const saved = await updateAttendance(updated._id, updated);
+      setRecords((current) =>
+        current.map((r) =>
+          (r._id && r._id === saved._id) ||
+          (r.employeeName === saved.employeeName && r.date === saved.date)
+            ? saved
+            : r
+        )
+      );
+      toast.success("Attendance updated");
+    } catch (err) {
+      toast.error("Update failed: " + (err.response?.data?.message || err.message));
+    }
   };
 
   const handleDeleteRecord = async (record) => {

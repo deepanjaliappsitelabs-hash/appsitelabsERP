@@ -1,6 +1,6 @@
 import api from "./api";
 
-// Helper — MySQL "id" ko "_id" pe map karta hai taaki UI consistent rahe
+// Helper - maps MySQL "id" to "_id" so the UI stays consistent.
 const parseDocuments = (documents) => {
   if (!documents) return {};
   if (typeof documents === "object") return documents;
@@ -29,7 +29,7 @@ const normalize = (emp) => ({
 
 export const getEmployees = async () => {
   const res = await api.get("/employees");
-  // Backend { success: true, data: [...] } bhejta hai
+  // Backend returns { success: true, data: [...] }.
   const list = res.data?.data ?? res.data;
   return Array.isArray(list) ? list.map(normalize) : [];
 };

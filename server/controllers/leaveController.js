@@ -97,7 +97,7 @@ const buildEmployeeLeaveNotification = (leave) => {
   };
 };
 
-// POST /api/leaves  — leave apply karo
+// POST /api/leaves - apply for leave
 const applyLeave = async (req, res) => {
   try {
     const { leaveType, fromDate, toDate, reason } = req.body;
@@ -125,7 +125,7 @@ const applyLeave = async (req, res) => {
   }
 };
 
-// GET /api/leaves  — admin sabhi leaves dekhe
+// GET /api/leaves - admin views all leaves
 const getLeaves = async (req, res) => {
   try {
     const leaves = await Leave.getAllLeaves();
@@ -135,7 +135,7 @@ const getLeaves = async (req, res) => {
   }
 };
 
-// GET /api/leaves/my  — employee apni leaves dekhe
+// GET /api/leaves/my - employee views their leaves
 const getMyLeaves = async (req, res) => {
   try {
     const employeeId = req.query.employeeId || req.user.id;
@@ -156,7 +156,7 @@ const getLeaveBalance = async (req, res) => {
   }
 };
 
-// PUT /api/leaves/:id  — admin approve/reject kare
+// PUT /api/leaves/:id - admin approves or rejects leave
 const updateLeaveStatus = async (req, res) => {
   try {
     const status = normalizeStatus(req.body.status);

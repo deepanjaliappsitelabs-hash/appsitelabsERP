@@ -14,16 +14,16 @@ const signupUser = async (req, res) => {
       return res.status(400).json({ message: "Name, email and password are required" });
     }
 
-    // Check karo user already exist karta hai ya nahi
+    // Check whether the user already exists.
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Password hash karo
+    // Hash the password.
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // User banao
+    // Create the user.
     const userId = await User.createUser({
       name,
       email,
@@ -52,19 +52,19 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Email/Employee ID and password are required" });
     }
 
-    // User dhundo
+    // Find the user.
     const user = await User.findByEmailOrEmployeeId(identifier);
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
 
-    // Password check karo
+    // Check the password.
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Employee details bhi lao agar role employee hai
+    // Fetch employee details when the role is employee.
     const [empRows] = await pool.query(
       "SELECT * FROM employees WHERE email = ?",
       [user.email]
@@ -72,7 +72,7 @@ const loginUser = async (req, res) => {
     const employee = empRows[0] || null;
     const authId = user.role === "employee" && employee?.id ? employee.id : user.id;
 
-    // JWT token banao
+    // Create the JWT token.
     const token = jwt.sign(
       { id: authId, role: user.role },
       process.env.JWT_SECRET,

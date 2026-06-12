@@ -27,7 +27,7 @@ export const getPayrollRecords = async (month) => {
   return Array.isArray(list) ? list.map(normalize) : [];
 };
 
-// employeeId = specific employee ka _id, ya undefined for all
+// employeeId is a specific employee _id, or undefined for all employees.
 export const generatePayroll = async (month, monthDate, employeeId, overrideSalary, customBreakdown) => {
   const payload = { month, monthDate };
   if (employeeId)      payload.employeeId      = employeeId;

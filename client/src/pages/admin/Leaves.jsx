@@ -37,7 +37,7 @@ function Leaves() {
         const data = await getLeaves();
         setLeaves(data);
       } catch (err) {
-        toast.error("Leaves load nahi hue: " + (err.response?.data?.message || err.message));
+        toast.error("Leaves could not be loaded: " + (err.response?.data?.message || err.message));
       } finally {
         setLoading(false);
       }
@@ -70,7 +70,7 @@ function Leaves() {
         );
         setBalanceRows(rows);
       } catch (err) {
-        toast.error("Leave balances load nahi hue: " + (err.response?.data?.message || err.message));
+        toast.error("Leave balances could not be loaded: " + (err.response?.data?.message || err.message));
         setBalanceRows([]);
       } finally {
         setBalanceLoading(false);

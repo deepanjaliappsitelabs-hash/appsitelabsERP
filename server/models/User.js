@@ -1,7 +1,7 @@
 // models/User.js
 const pool = require("../config/db");
 
-// Email se user dhundo (login ke liye)
+// Find user by email for login.
 const findByEmail = async (email) => {
   const [rows] = await pool.query(
     "SELECT * FROM users WHERE email = ?",
@@ -10,7 +10,7 @@ const findByEmail = async (email) => {
   return rows[0];
 };
 
-// Email ya employeeId se user dhundo (login ke liye)
+// Find user by email or employee ID for login.
 const findByEmailOrEmployeeId = async (identifier) => {
   const [rows] = await pool.query(
     `SELECT u.*
@@ -23,7 +23,7 @@ const findByEmailOrEmployeeId = async (identifier) => {
   return rows[0];
 };
 
-// ID se user dhundo
+// Find user by ID.
 const findById = async (id) => {
   const [rows] = await pool.query(
     "SELECT id, name, email, role FROM users WHERE id = ?",
@@ -32,7 +32,7 @@ const findById = async (id) => {
   return rows[0];
 };
 
-// Naya user banao
+// Create a new user.
 const createUser = async ({ name, email, password, role }) => {
   const [result] = await pool.query(
     "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",

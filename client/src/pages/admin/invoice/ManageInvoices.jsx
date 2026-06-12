@@ -65,7 +65,7 @@ function ClientSummary({ invoices }) {
       // Total Paid = sum of all paidAmount across invoices
       const totalPaid = sorted.reduce((s, i) => s + Number(i.paidAmount || 0), 0);
 
-      // Latest invoice ka dueAmount = actual current outstanding (cumulative)
+      // Latest invoice dueAmount is the actual current outstanding amount.
       const latestInv = sorted[sorted.length - 1];
       const totalDue = Number(latestInv?.dueAmount || 0);
 

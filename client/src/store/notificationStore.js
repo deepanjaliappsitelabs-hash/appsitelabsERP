@@ -1,6 +1,6 @@
 /**
  * notificationStore.js — Real-time Notification Store
- * Socket.io se live notifications aati hain
+ * Live notifications arrive through Socket.io.
  * Zustand-free — simple JS store with listeners
  */
 
@@ -250,7 +250,7 @@ export function clearAll() {
   notify();
 }
 
-// ── Subscribe (React hook ke liye) ────────────────────────────────────────────
+// ── Subscribe for the React hook ──────────────────────────────────────────────
 export function subscribeNotifications(fn) {
   listeners.add(fn);
   fn({ notifications, unreadCount, latestNotificationId }); // immediately current state de do

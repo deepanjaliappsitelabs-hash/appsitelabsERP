@@ -58,7 +58,7 @@ const getPayslip = async (req, res) => {
   }
 };
 
-// GET /api/payroll/employee/:id — employee ke payslips
+// GET /api/payroll/employee/:id - employee payslips
 const getEmployeePayroll = async (req, res) => {
   try {
     const records = await Payroll.getPayrollByEmployee(req.params.id);

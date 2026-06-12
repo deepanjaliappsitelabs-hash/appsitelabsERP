@@ -21,7 +21,7 @@ const leaveSelect = `
   LEFT JOIN employees e ON l.employee_id = e.id
 `;
 
-// Leave apply karo
+// Apply for leave.
 const createLeave = async ({ employee_id, leaveType, fromDate, toDate, reason }) => {
   const [result] = await pool.query(
     `INSERT INTO leaves (employee_id, leave_type, from_date, to_date, reason, status)
@@ -31,7 +31,7 @@ const createLeave = async ({ employee_id, leaveType, fromDate, toDate, reason })
   return result.insertId;
 };
 
-// Sabhi leaves lao (admin ke liye)
+// Fetch all leaves for admin.
 const getAllLeaves = async () => {
   const [rows] = await pool.query(
     `${leaveSelect}
@@ -40,7 +40,7 @@ const getAllLeaves = async () => {
   return rows;
 };
 
-// Ek employee ki leaves lao
+// Fetch leaves for one employee.
 const getLeavesByEmployee = async (employee_id) => {
   const [rows] = await pool.query(
     `${leaveSelect}
@@ -61,7 +61,7 @@ const getLeaveById = async (id) => {
   return rows[0];
 };
 
-// Leave status update karo (approve/reject)
+// Update leave status as approved or rejected.
 const updateLeaveStatus = async (id, status) => {
   await pool.query(
     `UPDATE leaves SET status = ? WHERE id = ?`,
