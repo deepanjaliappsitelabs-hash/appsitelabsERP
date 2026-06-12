@@ -6,7 +6,7 @@ const currentTime = () => new Date().toTimeString().slice(0, 5);
 
 const OFFICE_LAT            = 28.636022; 
 const OFFICE_LNG            = 77.0706781;  
-const ALLOWED_RADIUS_METERS = 100;      
+const ALLOWED_RADIUS_METERS = 50;      
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R    = 6371000;
