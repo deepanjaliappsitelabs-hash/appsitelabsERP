@@ -159,6 +159,7 @@ function Attendance() {
     { title: "Present Today", status: "Present", icon: <FiUserCheck /> },
     { title: "Absent", status: "Absent", icon: <FiUserX /> },
     { title: "Late", status: "Late", icon: <FiClock /> },
+    { title: "Half Day", status: "Half Day", icon: <FiClock /> },
     { title: "On Leave", status: "On Leave", icon: <FiClock /> },
     { title: "WFH", status: "WFH", icon: <FiHome /> },
   ];
@@ -183,7 +184,7 @@ function Attendance() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-6">
         {statsCards.map(({ title, status, icon }) => (
           <button
             key={status}
@@ -258,6 +259,7 @@ function Attendance() {
               { value: "Present", label: "Present" },
               { value: "Absent", label: "Absent" },
               { value: "Late", label: "Late" },
+              { value: "Half Day", label: "Half Day" },
               { value: "On Leave", label: "On Leave" },
               { value: "WFH", label: "WFH" },
             ]}

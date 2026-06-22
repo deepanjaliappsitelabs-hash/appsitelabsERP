@@ -5,6 +5,7 @@ const statusVariant = {
   Present: "success",
   Late: "warning",
   Absent: "danger",
+  "Half Day": "warning",
   "On Leave": "primary",
   WFH: "neutral",
 };

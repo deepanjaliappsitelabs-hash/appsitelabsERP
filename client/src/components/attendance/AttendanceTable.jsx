@@ -18,11 +18,12 @@ const statusVariant = {
   Present: "success",
   Late: "warning",
   Absent: "danger",
+  "Half Day": "warning",
   "On Leave": "primary",
   WFH: "neutral",
 };
 
-const statusOptions = ["Present", "Absent", "Late", "On Leave", "WFH"];
+const statusOptions = ["Present", "Absent", "Late", "Half Day", "On Leave", "WFH"];
 
 function EditModal({ record, onSave, onClose }) {
   const [form, setForm] = useState({

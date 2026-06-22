@@ -167,7 +167,7 @@ function MarkAttendanceModal({
           name="status"
           value={formData.status}
           onChange={handleChange}
-          options={["Present", "Late", "Absent", "On Leave", "WFH"]}
+          options={["Present", "Late", "Half Day", "Absent", "On Leave", "WFH"]}
         />
         {showTimeFields && (
           <>
