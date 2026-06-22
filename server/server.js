@@ -29,9 +29,9 @@ const registerChatSocket = require("./socket/chatSocket");
 const app = express();
 const server = http.createServer(app);
 const allowedOrigins = [
-  "http://admin.localhost:5173",
-  "http://erp.localhost:5173",
-  "http://localhost:5173",
+  "http://admin.localhost:5174",
+  "http://erp.localhost:5174",
+  "http://localhost:5174",
   "http://localhost:5174",
 ];
 
@@ -78,7 +78,7 @@ app.get("/", (req, res) => {
   res.send("ERP Backend Running");
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5002;
 initChatSchema().catch((err) => {
   console.error("❌ Chat schema setup failed:", err.message);
 });

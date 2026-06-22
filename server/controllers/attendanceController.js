@@ -59,6 +59,9 @@ const cleanLateNote = (note) => {
   return value ? value.slice(0, 300) : null;
 };
 
+const emptyTimeForStatus = (status) =>
+  ["absent", "on leave"].includes(String(status).toLowerCase());
+
 const emitAdminAttendanceNotification = (req, eventName, record, action) => {
   const io = req.app.get("io");
   if (!io || !record) return;
@@ -72,6 +75,57 @@ const emitAdminAttendanceNotification = (req, eventName, record, action) => {
       link:    "/admin/attendance",
     },
   });
+};
+
+// POST /api/attendance/manual
+const markManualAttendance = async (req, res) => {
+  try {
+    const { employeeName } = req.body;
+    const employee_id = req.body.employee_id || req.body.employeeId;
+    const date = req.body.date || today();
+    const status = normalizeStatus(req.body.status);
+    const lateNote = cleanLateNote(req.body.lateNote || req.body.late_note || req.body.note);
+    const checkIn = emptyTimeForStatus(status) ? null : req.body.checkIn || null;
+    const checkOut = emptyTimeForStatus(status) ? null : req.body.checkOut || null;
+    const totalHours = checkIn && checkOut ? decimalHours(checkIn, checkOut) : null;
+
+    if (!employee_id) {
+      return res.status(400).json({ message: "Employee ID is required" });
+    }
+
+    const existing = await Attendance.getTodayAttendance(employee_id, date);
+    if (existing) {
+      await Attendance.updateAttendance(existing.id, {
+        check_in: checkIn,
+        check_out: checkOut,
+        status,
+        date,
+        total_hours: totalHours,
+        late_note: lateNote,
+      });
+      const updated = await Attendance.getAttendanceById(existing.id);
+      emitAdminAttendanceNotification(req, "attendance:updated", updated, "Attendance updated");
+      return res.json({ success: true, message: "Attendance updated", data: updated });
+    }
+
+    const id = await Attendance.createAttendance({
+      employee_id,
+      employeeName,
+      date,
+      checkIn,
+      checkOut,
+      totalHours,
+      status,
+      lateNote,
+      location_verified: 0,
+    });
+
+    const record = await Attendance.getAttendanceById(id);
+    emitAdminAttendanceNotification(req, "attendance:created", record, "Attendance marked");
+    res.status(201).json({ success: true, message: "Attendance marked", data: record });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // POST /api/attendance/checkin
@@ -236,6 +290,7 @@ const deleteAttendance = async (req, res) => {
 };
 
 module.exports = {
+  markManualAttendance,
   checkIn,
   checkOut,
   updateAttendance,

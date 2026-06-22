@@ -13,8 +13,6 @@ import toast from "react-hot-toast";
 
 const ENTRY_HOUR   = 10;
 const ENTRY_MINUTE = 0;
-const EXIT_HOUR    = 18;
-const EXIT_MINUTE  = 30;
 
 function pad(n) { return String(n).padStart(2, "0"); }
 
@@ -42,21 +40,9 @@ function canEntry(now) {
   return now >= limit;
 }
 
-function canExit(now) {
-  const limit = new Date(now);
-  limit.setHours(EXIT_HOUR, EXIT_MINUTE, 0, 0);
-  return now >= limit;
-}
-
 function minutesUntilEntry(now) {
   const limit = new Date(now);
   limit.setHours(ENTRY_HOUR, ENTRY_MINUTE, 0, 0);
-  return Math.max(0, Math.ceil((limit - now) / 60000));
-}
-
-function minutesUntilExit(now) {
-  const limit = new Date(now);
-  limit.setHours(EXIT_HOUR, EXIT_MINUTE, 0, 0);
   return Math.max(0, Math.ceil((limit - now) / 60000));
 }
 
@@ -87,26 +73,23 @@ function getCurrentLocation() {
   });
 }
 
-function StrictPopup({ type, onClose }) {
-  const isEntry = type === "entry";
+function StrictPopup({ onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-[#E7E8F0] bg-white p-6 shadow-2xl">
         <div className="mb-4 flex justify-center">
-          <div className={`flex h-14 w-14 items-center justify-center rounded-full ${isEntry ? "bg-red-50" : "bg-amber-50"}`}>
-            <FiAlertCircle className={`text-3xl ${isEntry ? "text-red-500" : "text-amber-500"}`} />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+            <FiAlertCircle className="text-3xl text-red-500" />
           </div>
         </div>
         <h2 className="mb-2 text-center text-base font-bold text-slate-900">
-          {isEntry ? "Entry Not Allowed" : "Exit Not Allowed"}
+          Entry Not Allowed
         </h2>
         <p className="mb-1 text-center text-sm text-slate-500">
-          {isEntry ? `Office entry opens at ${officeEntryLabel()} only.` : `You cannot exit before 6:30 PM.`}
+          Office entry opens at {officeEntryLabel()} only.
         </p>
         <p className="mb-6 text-center text-xs text-slate-400">
-          {isEntry
-            ? `Please wait until ${officeEntryLabel()} to mark your attendance.`
-            : "Please complete your working hours before logging out."}
+          Please wait until {officeEntryLabel()} to mark your attendance.
         </p>
         <button type="button" onClick={onClose}
           className="w-full rounded-xl bg-[#302568] py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d3080]">
@@ -282,10 +265,6 @@ export default function EmployeeAttendance() {
   };
 
   const handleCheckOut = async () => {
-    if (!canExit(now)) {
-      setPopup("exit");
-      return;
-    }
     if (!todayRecord?._id) return;
     const t            = new Date();
     const finalElapsed = diffHHMMSS(entryTime, t);
@@ -314,7 +293,6 @@ export default function EmployeeAttendance() {
   const statusLabel = checkedOut ? "Day Complete ✅" : checkedIn ? "Currently Working 🟢" : "Not Checked In";
   const statusColor = checkedOut ? "text-green-600" : checkedIn ? "text-emerald-600" : "text-slate-400";
   const entryOpen   = canEntry(now);
-  const exitOpen    = canExit(now);
 
   return (
     <div className="min-h-screen bg-[#F6F7FB] px-4 py-8 sm:px-8">
@@ -343,8 +321,8 @@ export default function EmployeeAttendance() {
             <span className={`flex items-center gap-1 rounded-full px-3 py-1 font-semibold ${entryOpen ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
               {entryOpen ? <FiCheckCircle /> : <FiXCircle />} Entry: {officeEntryLabel()}
             </span>
-            <span className={`flex items-center gap-1 rounded-full px-3 py-1 font-semibold ${exitOpen ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
-              {exitOpen ? <FiCheckCircle /> : <FiXCircle />} Exit: 6:30 PM
+            <span className="flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 font-semibold text-green-700">
+              <FiCheckCircle /> Exit: Anytime
             </span>
           </div>
         </div>
@@ -445,15 +423,15 @@ export default function EmployeeAttendance() {
               <button
                 type="button"
                 onClick={handleCheckOut}
-                disabled={!exitOpen || saving}
+                disabled={saving}
                 className={[
                   "mt-3 w-full rounded-xl py-2 text-sm font-semibold transition",
-                  exitOpen
-                    ? "bg-red-500 text-white hover:bg-red-600"
-                    : "cursor-not-allowed bg-slate-100 text-slate-400",
+                  saving
+                    ? "cursor-not-allowed bg-slate-100 text-slate-400"
+                    : "bg-red-500 text-white hover:bg-red-600",
                 ].join(" ")}
               >
-                {exitOpen ? "Mark Exit" : "Available at 6:30 PM"}
+                {saving ? "Saving..." : "Mark Exit"}
               </button>
             )}
             {!checkedIn && <p className="mt-3 text-xs text-slate-400">Check in first</p>}
@@ -473,18 +451,6 @@ export default function EmployeeAttendance() {
               <p className="text-sm font-semibold text-red-700">Entry not open yet</p>
               <p className="text-xs text-red-500">
                 Office entry opens at <strong>{officeEntryLabel()}</strong>. {minutesUntilEntry(now)} minute(s) remaining.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {checkedIn && !checkedOut && !exitOpen && (
-          <div className="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-            <FiAlertCircle className="mt-0.5 shrink-0 text-amber-500" />
-            <div>
-              <p className="text-sm font-semibold text-amber-700">Exit locked until 6:30 PM</p>
-              <p className="text-xs text-amber-600">
-                You can check out after <strong>6:30 PM</strong>. {minutesUntilExit(now)} minute(s) remaining.
               </p>
             </div>
           </div>

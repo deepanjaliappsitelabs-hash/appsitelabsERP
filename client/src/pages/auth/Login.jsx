@@ -11,7 +11,7 @@ const isEmployeePortal = subdomain === "erp";
 const isLocalDev       = !isAdminPortal && !isEmployeePortal;
 
 // ── API URL ───────────────────────────────────────────────────────────────────
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5002";
 
 // ── Portal config (UI text + badge) ──────────────────────────────────────────
 const portalConfig = isAdminPortal

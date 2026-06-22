@@ -94,7 +94,7 @@ function EmployeeDashboard() {
 
   useEffect(() => {
     refreshLeaveData();
-    const intervalId = window.setInterval(refreshLeaveData, 5000);
+    const intervalId = window.setInterval(refreshLeaveData, 5002);
     window.addEventListener("focus", refreshLeaveData);
 
     return () => {

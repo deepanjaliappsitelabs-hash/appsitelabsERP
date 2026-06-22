@@ -8,7 +8,7 @@ import Avatar from "../../../components/ui/Avatar";
 import api from "../../../services/api";
 import getStoredUser from "../../../utils/authStorage";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5002";
 
 const getCurrentParticipant = (user) => ({
   participantType: user?.role === "admin" ? "admin" : "employee",

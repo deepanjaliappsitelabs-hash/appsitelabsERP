@@ -99,6 +99,7 @@ function MarkAttendanceModal({
   employees = [],
 }) {
   const [formData, setFormData] = useState(initialState);
+  const showTimeFields = !["Absent", "On Leave"].includes(formData.status);
 
   if (!open) {
     return null;
@@ -168,22 +169,26 @@ function MarkAttendanceModal({
           onChange={handleChange}
           options={["Present", "Late", "Absent", "On Leave", "WFH"]}
         />
-        <TimeWithPeriod
-          label="Check-in"
-          name="checkIn"
-          periodName="checkInPeriod"
-          value={formData.checkIn}
-          period={formData.checkInPeriod}
-          onChange={handleChange}
-        />
-        <TimeWithPeriod
-          label="Check-out"
-          name="checkOut"
-          value={formData.checkOut}
-          periodName="checkOutPeriod"
-          period={formData.checkOutPeriod}
-          onChange={handleChange}
-        />
+        {showTimeFields && (
+          <>
+            <TimeWithPeriod
+              label="Check-in"
+              name="checkIn"
+              periodName="checkInPeriod"
+              value={formData.checkIn}
+              period={formData.checkInPeriod}
+              onChange={handleChange}
+            />
+            <TimeWithPeriod
+              label="Check-out"
+              name="checkOut"
+              value={formData.checkOut}
+              periodName="checkOutPeriod"
+              period={formData.checkOutPeriod}
+              onChange={handleChange}
+            />
+          </>
+        )}
         <label className="block md:col-span-2">
           <span className="mb-1.5 block text-sm font-medium text-slate-700">
             Late login note

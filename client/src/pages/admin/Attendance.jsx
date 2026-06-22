@@ -13,7 +13,7 @@ import StatsCard from "../../components/ui/StatsCard";
 import {
   deleteAttendance,
   getAttendance,
-  markAttendance,
+  markManualAttendance,
   updateAttendance,
 } from "../../services/attendanceService";
 import { getEmployees } from "../../services/employeeService";
@@ -91,8 +91,23 @@ function Attendance() {
 
   const handleMarkAttendance = async (payload) => {
     try {
-      const created = await markAttendance(payload);
-      setRecords((current) => [created, ...current]);
+      const created = await markManualAttendance({
+        ...payload,
+        manualEntry: true,
+      });
+      setRecords((current) => {
+        const existingIndex = current.findIndex(
+          (record) =>
+            record._id === created._id ||
+            (record.employee_id === created.employee_id && record.date === created.date)
+        );
+
+        if (existingIndex === -1) return [created, ...current];
+
+        return current.map((record, index) =>
+          index === existingIndex ? created : record
+        );
+      });
       setShowModal(false);
       toast.success("Attendance marked!");
     } catch (err) {

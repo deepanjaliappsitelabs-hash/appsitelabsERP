@@ -7,7 +7,7 @@
 import { io } from "socket.io-client";
 import api from "../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5002";
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let socket = null;

@@ -44,6 +44,12 @@ export const markAttendance = async (attendanceData) => {
   return normalize(rec);
 };
 
+export const markManualAttendance = async (attendanceData) => {
+  const res = await api.post("/attendance/manual", attendanceData);
+  const rec = res.data?.data ?? res.data;
+  return normalize(rec);
+};
+
 export const checkOutAttendance = async (id, attendanceData) => {
   const res = await api.put(`/attendance/checkout/${id}`, attendanceData);
   const rec = res.data?.data ?? res.data;
