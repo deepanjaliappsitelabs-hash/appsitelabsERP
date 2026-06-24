@@ -66,6 +66,7 @@ function NotificationDropdown({ notifications, unreadCount, onMarkAll, onClose, 
 const SEARCH_LINKS = [
   { label: "Employees",   to: "/admin/employees" },
   { label: "Attendance",  to: "/admin/attendance" },
+  { label: "Daily Worklog", to: "/admin/work-logs" },
   { label: "Leaves",      to: "/admin/leaves" },
   { label: "Payroll",     to: "/admin/payroll" },
   { label: "Recruitment", to: "/admin/recruitment" },

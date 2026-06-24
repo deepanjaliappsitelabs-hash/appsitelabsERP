@@ -7,6 +7,7 @@ import {
 import AdminLayout from "../layouts/AdminLayout";
 import EmployeeLayout from "../layouts/EmployeeLayout";
 import Attendance from "../pages/admin/Attendance";
+import DailyWorkLogs from "../pages/admin/DailyWorkLogs";
 import Dashboard from "../pages/admin/Dashboard";
 import Employees from "../pages/admin/Employees";
 import Leaves from "../pages/admin/Leaves";
@@ -95,6 +96,7 @@ function AppRoutes() {
             <Route path="employees/:id"        element={<EmployeeProfile />} />
             <Route path="signup"               element={<Signup />} />
             <Route path="attendance"           element={<Attendance />} />
+            <Route path="work-logs"            element={<DailyWorkLogs />} />
             <Route path="leaves"               element={<Leaves />} />
             <Route path="payroll"              element={<Payroll />} />
             <Route path="payroll/payslip/:id"  element={<PayslipView />} />
@@ -181,6 +183,7 @@ function AppRoutes() {
               <Route path="employees/:id"        element={<EmployeeProfile />} />
               <Route path="signup"               element={<Signup />} />
               <Route path="attendance"           element={<Attendance />} />
+              <Route path="work-logs"            element={<DailyWorkLogs />} />
               <Route path="leaves"               element={<Leaves />} />
               <Route path="payroll"              element={<Payroll />} />
               <Route path="payroll/payslip/:id"  element={<PayslipView />} />

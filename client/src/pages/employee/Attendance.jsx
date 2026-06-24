@@ -13,6 +13,8 @@ import toast from "react-hot-toast";
 
 const ENTRY_HOUR   = 10;
 const ENTRY_MINUTE = 0;
+const LATE_HOUR    = 10;
+const LATE_MINUTE  = 15;
 
 function pad(n) { return String(n).padStart(2, "0"); }
 
@@ -40,6 +42,12 @@ function canEntry(now) {
   return now >= limit;
 }
 
+function isLateEntry(now) {
+  const limit = new Date(now);
+  limit.setHours(LATE_HOUR, LATE_MINUTE, 0, 0);
+  return now > limit;
+}
+
 function minutesUntilEntry(now) {
   const limit = new Date(now);
   limit.setHours(ENTRY_HOUR, ENTRY_MINUTE, 0, 0);
@@ -50,6 +58,12 @@ function officeEntryLabel() {
   const h = ENTRY_HOUR % 12 || 12;
   const ampm = ENTRY_HOUR >= 12 ? "PM" : "AM";
   return `${h}:${pad(ENTRY_MINUTE)} ${ampm}`;
+}
+
+function lateEntryLabel() {
+  const h = LATE_HOUR % 12 || 12;
+  const ampm = LATE_HOUR >= 12 ? "PM" : "AM";
+  return `${h}:${pad(LATE_MINUTE)} ${ampm}`;
 }
 
 // GPS: browser se current location lo
@@ -121,6 +135,33 @@ function LocationPopup({ message, onClose }) {
   );
 }
 
+function LatePopup({ checkInTime, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-[#E7E8F0] bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
+            <FiAlertCircle className="text-3xl text-amber-500" />
+          </div>
+        </div>
+        <h2 className="mb-2 text-center text-base font-bold text-slate-900">
+          You are late
+        </h2>
+        <p className="mb-1 text-center text-sm text-slate-500">
+          Check-in after {lateEntryLabel()} is marked as late.
+        </p>
+        <p className="mb-6 text-center text-xs text-slate-400">
+          Your attendance is saved as Late{checkInTime ? ` at ${formatHHMM(checkInTime)}` : ""}.
+        </p>
+        <button type="button" onClick={onClose}
+          className="w-full rounded-xl bg-[#302568] py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d3080]">
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const STATUS_STYLE = {
   Present: "bg-green-50 text-green-700",
   Absent:  "bg-red-50 text-red-600",
@@ -159,6 +200,7 @@ export default function EmployeeAttendance() {
   const [exitTime,     setExitTime]     = useState(null);
   const [elapsed,      setElapsed]      = useState("00h 00m 00s");
   const [popup,        setPopup]        = useState(null); // "entry" | "exit"
+  const [latePopup,    setLatePopup]    = useState(null);
   const [locationMsg,  setLocationMsg]  = useState(null); // GPS error message
   const [todayRecord,  setTodayRecord]  = useState(null);
   const [records,      setRecords]      = useState([]);
@@ -250,6 +292,9 @@ export default function EmployeeAttendance() {
       setRecords((current) => [created, ...current.filter((row) => row._id !== created._id)]);
       setEntryTime(t);
       setCheckedIn(true);
+      if (created.status === "Late" || isLateEntry(t)) {
+        setLatePopup(t);
+      }
       toast.success("Attendance marked");
     } catch (err) {
       const msg = err.response?.data?.message || "Check-in failed";
@@ -297,6 +342,7 @@ export default function EmployeeAttendance() {
   return (
     <div className="min-h-screen bg-[#F6F7FB] px-4 py-8 sm:px-8">
       {popup && <StrictPopup type={popup} onClose={() => setPopup(null)} />}
+      {latePopup && <LatePopup checkInTime={latePopup} onClose={() => setLatePopup(null)} />}
       {locationMsg && <LocationPopup message={locationMsg} onClose={() => setLocationMsg(null)} />}
 
       <div className="mx-auto max-w-3xl space-y-6">

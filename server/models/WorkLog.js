@@ -68,6 +68,20 @@ const getByEmployee = async (employeeId) => {
   return rows.map(mapWorkLog);
 };
 
+const getAll = async () => {
+  await ensureTable();
+  const [rows] = await pool.query(
+    `SELECT wl.id, wl.employee_id, DATE_FORMAT(wl.work_date, '%Y-%m-%d') AS work_date,
+            wl.work_mode, wl.tasks, wl.blockers, wl.tomorrow_plan, wl.mood,
+            wl.productivity, wl.links, wl.total_hours, wl.created_at,
+            e.name AS employeeName, e.department, e.designation
+     FROM work_logs wl
+     LEFT JOIN employees e ON wl.employee_id = e.id
+     ORDER BY wl.work_date DESC, wl.created_at DESC`
+  );
+  return rows.map(mapWorkLog);
+};
+
 const getById = async (id) => {
   await ensureTable();
   const [rows] = await pool.query(
@@ -81,4 +95,4 @@ const getById = async (id) => {
   return rows[0] ? mapWorkLog(rows[0]) : null;
 };
 
-module.exports = { createWorkLog, getByEmployee, getById };
+module.exports = { createWorkLog, getByEmployee, getById, getAll };

@@ -1,13 +1,30 @@
-import Badge from "../ui/Badge";
 import Card from "../ui/Card";
 
-const statusVariant = {
-  Present: "success",
-  Late: "warning",
-  Absent: "danger",
-  "Half Day": "warning",
-  "On Leave": "primary",
-  WFH: "neutral",
+const statusStyle = {
+  Present: {
+    label: "P",
+    className: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  },
+  Late: {
+    label: "L",
+    className: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  },
+  Absent: {
+    label: "A",
+    className: "bg-red-50 text-red-700 ring-red-600/20",
+  },
+  "Half Day": {
+    label: "H",
+    className: "bg-orange-50 text-orange-700 ring-orange-600/20",
+  },
+  "On Leave": {
+    label: "OL",
+    className: "bg-violet-50 text-violet-700 ring-violet-600/20",
+  },
+  WFH: {
+    label: "W",
+    className: "bg-sky-50 text-sky-700 ring-sky-600/20",
+  },
 };
 
 const monthNames = [
@@ -59,7 +76,9 @@ function AttendanceCalendar({
   );
   const recordsByDate = records.reduce((acc, record) => {
     if (record.date) {
-      acc[String(record.date).slice(0, 10)] = record;
+      const dateKey = String(record.date).slice(0, 10);
+      acc[dateKey] = acc[dateKey] || [];
+      acc[dateKey].push(record);
     }
     return acc;
   }, {});
@@ -88,8 +107,7 @@ function AttendanceCalendar({
           <div key={key} />
         ))}
         {days.map((day) => {
-          const record = recordsByDate[getDateKey(year, monthIndex, day)];
-          const status = record?.status;
+          const dayRecords = recordsByDate[getDateKey(year, monthIndex, day)] || [];
 
           return (
             <div
@@ -99,11 +117,27 @@ function AttendanceCalendar({
               <p className="text-sm font-semibold text-slate-950">
                 {day}
               </p>
-              {status && (
-                <div className="mt-3">
-                  <Badge variant={statusVariant[status] || "neutral"}>
-                    {status}
-                  </Badge>
+              {dayRecords.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {dayRecords.map((record, index) => {
+                    const style = statusStyle[record.status] || {
+                      label: "?",
+                      className: "bg-slate-100 text-slate-700 ring-slate-600/20",
+                    };
+
+                    return (
+                      <span
+                        key={record._id || `${record.employee_id}-${record.date}-${index}`}
+                        title={`${record.employeeName || "Employee"} - ${record.status}`}
+                        className={[
+                          "inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-bold ring-1 ring-inset",
+                          style.className,
+                        ].join(" ")}
+                      >
+                        {style.label}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>

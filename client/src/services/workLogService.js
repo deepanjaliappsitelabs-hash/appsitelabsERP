@@ -6,6 +6,12 @@ export const getMyWorkLogs = async (employeeId) => {
   return Array.isArray(list) ? list : [];
 };
 
+export const getAllWorkLogs = async () => {
+  const res = await api.get("/work-logs");
+  const list = res.data?.data ?? res.data;
+  return Array.isArray(list) ? list : [];
+};
+
 export const createWorkLog = async (payload) => {
   const res = await api.post("/work-logs", payload);
   return res.data?.data ?? res.data;

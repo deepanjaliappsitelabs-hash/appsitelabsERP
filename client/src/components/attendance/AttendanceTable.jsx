@@ -163,22 +163,26 @@ function AttendanceTable({ records = [], onUpdate, onDelete }) {
               )}
             </td>
             <td className="px-4 py-4">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditRecord(item)}
-                  className="rounded-lg bg-[#F1EDFF] px-3 py-2 text-xs font-semibold text-[#5B3FD6] transition hover:bg-[#E4DCFF]"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete?.(item)}
-                  className="rounded-lg bg-[#FEF3F2] px-3 py-2 text-xs font-semibold text-[#B42318] transition hover:bg-[#FEE4E2]"
-                >
-                  Delete
-                </button>
-              </div>
+              {item.generatedAbsent ? (
+                <span className="text-xs font-semibold text-slate-400">Auto</span>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditRecord(item)}
+                    className="rounded-lg bg-[#F1EDFF] px-3 py-2 text-xs font-semibold text-[#5B3FD6] transition hover:bg-[#E4DCFF]"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete?.(item)}
+                    className="rounded-lg bg-[#FEF3F2] px-3 py-2 text-xs font-semibold text-[#B42318] transition hover:bg-[#FEE4E2]"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
             </td>
           </tr>
         )}

@@ -20,6 +20,39 @@ import { getEmployees } from "../../services/employeeService";
 import exportToExcel from "../../utils/exportToExcel";
 import { useNotifications } from "../../hooks/useNotifications";
 
+const todayDate = () => {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+};
+
+const getEmployeeRecordId = (value) => String(value ?? "");
+
+const getMonthValue = (dateValue) => String(dateValue || todayDate()).slice(0, 7);
+
+const getMonthLabel = (monthValue) =>
+  new Date(`${monthValue}-01T00:00:00`).toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+const getDaysInMonth = (monthValue) => {
+  const [year, month] = monthValue.split("-").map(Number);
+  return new Date(year, month, 0).getDate();
+};
+
+const getMonthDateKeys = (monthValue, today) => {
+  const daysInMonth = getDaysInMonth(monthValue);
+  const maxDay = monthValue === getMonthValue(today)
+    ? Number(today.slice(8, 10))
+    : daysInMonth;
+
+  return Array.from({ length: maxDay }, (_, index) => {
+    const day = String(index + 1).padStart(2, "0");
+    return `${monthValue}-${day}`;
+  });
+};
+
 function Attendance() {
   useNotifications();
   const [view, setView] = useState("daily");
@@ -32,6 +65,7 @@ function Attendance() {
     employee: "",
     department: "",
     date: "",
+    month: getMonthValue(todayDate()),
     status: "",
   });
 
@@ -68,21 +102,90 @@ function Attendance() {
     return () => window.removeEventListener("attendance:updated", refreshAttendance);
   }, []);
 
-  const filteredRecords = useMemo(() => {
+  const today = useMemo(() => todayDate(), []);
+
+  const isTodayRecord = (record) => record.date === today;
+
+  const todayRecords = useMemo(() => {
+    const todaysAttendance = records.filter(isTodayRecord);
+    const markedEmployeeIds = new Set(
+      todaysAttendance.map((record) => getEmployeeRecordId(record.employee_id))
+    );
+
+    const generatedAbsentRows = employees
+      .filter((employee) => !markedEmployeeIds.has(getEmployeeRecordId(employee._id)))
+      .map((employee) => ({
+        _id: `absent-${employee._id}-${today}`,
+        employee_id: employee._id,
+        employeeName: employee.name,
+        department: employee.department,
+        date: today,
+        checkIn: "",
+        checkOut: "",
+        hours: "",
+        status: "Absent",
+        lateNote: "",
+        generatedAbsent: true,
+      }));
+
+    return [...todaysAttendance, ...generatedAbsentRows];
+  }, [records, employees, today]);
+
+  const selectedMonthRecords = useMemo(() => {
+    const monthDateKeys = getMonthDateKeys(filters.month, today);
+    const monthRecordIds = new Set(
+      records
+        .filter((record) => String(record.date || "").startsWith(filters.month))
+        .map((record) => `${getEmployeeRecordId(record.employee_id)}-${record.date}`)
+    );
+
+    const generatedAbsentRows = employees.flatMap((employee) =>
+      monthDateKeys
+        .filter((date) => !monthRecordIds.has(`${getEmployeeRecordId(employee._id)}-${date}`))
+        .map((date) => ({
+          _id: `absent-${employee._id}-${date}`,
+          employee_id: employee._id,
+          employeeName: employee.name,
+          department: employee.department,
+          date,
+          checkIn: "",
+          checkOut: "",
+          hours: "",
+          status: "Absent",
+          lateNote: "",
+          generatedAbsent: true,
+        }))
+    );
+
+    return [
+      ...records.filter((record) => String(record.date || "").startsWith(filters.month)),
+      ...generatedAbsentRows,
+    ];
+  }, [records, employees, filters.month, today]);
+
+  const displayedRecords = useMemo(() => {
     const statusFilter = activeFilter || filters.status;
-    return records.filter((record) => {
+    const sourceRecords = activeFilter
+      ? todayRecords
+      : view === "monthly"
+        ? selectedMonthRecords
+        : records;
+
+    return sourceRecords.filter((record) => {
       const matchesEmployee =
         !filters.employee || record.employeeName === filters.employee;
       const matchesDepartment =
         !filters.department || record.department === filters.department;
-      const matchesDate = !filters.date || record.date === filters.date;
+      const matchesDate = activeFilter
+        ? record.date === today
+        : view === "monthly" || !filters.date || record.date === filters.date;
       const matchesStatus = !statusFilter || record.status === statusFilter;
       return matchesEmployee && matchesDepartment && matchesDate && matchesStatus;
     });
-  }, [records, filters, activeFilter]);
+  }, [records, todayRecords, selectedMonthRecords, filters, activeFilter, today, view]);
 
   const countStatus = (status) =>
-    records.filter((record) => record.status === status).length;
+    todayRecords.filter((record) => record.status === status).length;
 
   const handleFilterChange = (event) => {
     setActiveFilter(null);
@@ -147,13 +250,16 @@ function Attendance() {
   };
 
   const handleCardClick = (status) => {
+    setView("daily");
     setActiveFilter((prev) => (prev === status ? null : status));
-    setFilters((prev) => ({ ...prev, status: "" }));
+    setFilters((prev) => ({ ...prev, date: "", status: "" }));
   };
 
   const departments = [
     ...new Set(employees.map((e) => e.department).filter(Boolean)),
   ];
+
+  const calendarMonthLabel = getMonthLabel(filters.month);
 
   const statsCards = [
     { title: "Present Today", status: "Present", icon: <FiUserCheck /> },
@@ -173,7 +279,7 @@ function Attendance() {
           <div className="flex gap-3">
             <Button
               type="button"
-              onClick={() => exportToExcel(filteredRecords, "attendance")}
+              onClick={() => exportToExcel(displayedRecords, "attendance")}
               className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800"
             >
               <FiDownload />
@@ -209,7 +315,7 @@ function Attendance() {
 
       {activeFilter && (
         <p className="text-sm text-[#5B3FD6]">
-          Showing <strong>{activeFilter}</strong> records ({filteredRecords.length}).{" "}
+          Showing today's <strong>{activeFilter}</strong> records ({displayedRecords.length}).{" "}
           <button
             type="button"
             onClick={() => setActiveFilter(null)}
@@ -221,7 +327,7 @@ function Attendance() {
       )}
 
       <Card>
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-6">
           <Select
             label="Employee"
             name="employee"
@@ -248,6 +354,17 @@ function Attendance() {
             type="date"
             value={filters.date}
             onChange={handleFilterChange}
+            disabled={view === "monthly"}
+            className={view === "monthly" ? "cursor-not-allowed bg-slate-50 text-slate-400" : ""}
+          />
+          <Input
+            label="Month"
+            name="month"
+            type="month"
+            value={filters.month}
+            onChange={handleFilterChange}
+            disabled={view === "daily"}
+            className={view === "daily" ? "cursor-not-allowed bg-slate-50 text-slate-400" : ""}
           />
           <Select
             label="Status"
@@ -288,12 +405,12 @@ function Attendance() {
         <p className="text-center text-slate-400 py-10">Loading attendance…</p>
       ) : view === "daily" ? (
         <AttendanceTable
-          records={filteredRecords}
+          records={displayedRecords}
           onUpdate={handleUpdateRecord}
           onDelete={handleDeleteRecord}
         />
       ) : (
-        <AttendanceCalendar records={filteredRecords} />
+        <AttendanceCalendar records={displayedRecords} monthLabel={calendarMonthLabel} />
       )}
 
       <MarkAttendanceModal

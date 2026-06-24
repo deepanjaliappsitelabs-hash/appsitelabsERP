@@ -25,4 +25,13 @@ const getMyWorkLogs = async (req, res) => {
   }
 };
 
-module.exports = { createWorkLog, getMyWorkLogs };
+const getAllWorkLogs = async (req, res) => {
+  try {
+    const logs = await WorkLog.getAll();
+    res.json({ success: true, data: logs });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { createWorkLog, getMyWorkLogs, getAllWorkLogs };

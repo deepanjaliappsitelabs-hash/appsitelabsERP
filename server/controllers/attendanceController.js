@@ -7,6 +7,8 @@ const currentTime = () => new Date().toTimeString().slice(0, 5);
 const OFFICE_LAT            = 28.636022; 
 const OFFICE_LNG            = 77.0706781;  
 const ALLOWED_RADIUS_METERS = 50;      
+const LATE_CHECK_IN_TIME    = "10:15";
+const DEFAULT_LATE_NOTE     = "Late check-in after 10:15 AM";
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R    = 6371000;
@@ -41,6 +43,14 @@ const decimalHours = (start, end) => {
   const diffMinutes = Math.max(0, (endHour * 60 + endMinute) - (startHour * 60 + startMinute));
   return Number((diffMinutes / 60).toFixed(2));
 };
+
+const timeToMinutes = (time) => {
+  const [hours, minutes] = String(time || "00:00").split(":").map(Number);
+  return (hours || 0) * 60 + (minutes || 0);
+};
+
+const isLateCheckIn = (checkIn) =>
+  Boolean(checkIn) && timeToMinutes(checkIn) > timeToMinutes(LATE_CHECK_IN_TIME);
 
 const toTitleStatus = (status = "") => {
   const map = {
@@ -135,8 +145,10 @@ const checkIn = async (req, res) => {
     const employee_id = req.body.employee_id || req.body.employeeId || req.user.id;
     const date     = req.body.date    || today();
     const checkIn  = req.body.checkIn || currentTime();
-    const status   = normalizeStatus(req.body.status);
+    const lateCheckIn = isLateCheckIn(checkIn);
+    const status   = lateCheckIn ? "late" : normalizeStatus(req.body.status);
     const lateNote = cleanLateNote(req.body.lateNote || req.body.late_note || req.body.note);
+    const finalLateNote = lateCheckIn ? lateNote || DEFAULT_LATE_NOTE : lateNote;
 
     if (!employee_id) {
       return res.status(400).json({ message: "Employee ID is required" });
@@ -184,7 +196,7 @@ const checkIn = async (req, res) => {
       date,
       checkIn,
       status,
-      lateNote,
+      lateNote: finalLateNote,
       latitude:          parseFloat(latitude),
       longitude:         parseFloat(longitude),
       distance_meters:   distanceRounded,
@@ -193,7 +205,11 @@ const checkIn = async (req, res) => {
 
     const record = await Attendance.getAttendanceById(id);
     emitAdminAttendanceNotification(req, "attendance:created", record, "Attendance marked");
-    res.status(201).json({ success: true, message: "Checked in successfully", data: record });
+    res.status(201).json({
+      success: true,
+      message: lateCheckIn ? "Checked in successfully. You are marked late." : "Checked in successfully",
+      data: record,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
