@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment Variables (SENSITIVE - Firebase keys, API URLs)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+**/serviceAccountKey.json
+**/firebase-adminsdk*.json
+
+# Cache
+.eslintcache
+.parcel-cache/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

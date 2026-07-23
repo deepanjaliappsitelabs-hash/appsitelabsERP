@@ -1,0 +1,577 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  FiClock, FiLogIn, FiLogOut, FiAlertCircle,
+  FiCheckCircle, FiCalendar, FiXCircle, FiEdit3, FiMapPin,
+} from "react-icons/fi";
+import getStoredUser from "../../utils/authStorage";
+import {
+  checkOutAttendance,
+  getAttendanceByEmployee,
+  markAttendance,
+} from "../../services/attendanceService";
+import toast from "react-hot-toast";
+
+const ENTRY_HOUR   = 10;
+const ENTRY_MINUTE = 0;
+const LATE_HOUR    = 10;
+const LATE_MINUTE  = 15;
+
+function pad(n) { return String(n).padStart(2, "0"); }
+
+function formatHHMM(date) {
+  if (!date) return "--:--";
+  const d = new Date(date);
+  let h = d.getHours();
+  const m = pad(d.getMinutes());
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+function diffHHMMSS(start, end) {
+  const diff = Math.floor((end - start) / 1000);
+  const h = Math.floor(diff / 3600);
+  const m = Math.floor((diff % 3600) / 60);
+  const s = diff % 60;
+  return `${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+}
+
+function canEntry(now) {
+  const limit = new Date(now);
+  limit.setHours(ENTRY_HOUR, ENTRY_MINUTE, 0, 0);
+  return now >= limit;
+}
+
+function isLateEntry(now) {
+  const limit = new Date(now);
+  limit.setHours(LATE_HOUR, LATE_MINUTE, 0, 0);
+  return now > limit;
+}
+
+function minutesUntilEntry(now) {
+  const limit = new Date(now);
+  limit.setHours(ENTRY_HOUR, ENTRY_MINUTE, 0, 0);
+  return Math.max(0, Math.ceil((limit - now) / 60000));
+}
+
+function officeEntryLabel() {
+  const h = ENTRY_HOUR % 12 || 12;
+  const ampm = ENTRY_HOUR >= 12 ? "PM" : "AM";
+  return `${h}:${pad(ENTRY_MINUTE)} ${ampm}`;
+}
+
+function lateEntryLabel() {
+  const h = LATE_HOUR % 12 || 12;
+  const ampm = LATE_HOUR >= 12 ? "PM" : "AM";
+  return `${h}:${pad(LATE_MINUTE)} ${ampm}`;
+}
+
+// GPS: browser se current location lo
+function getCurrentLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not supported by your browser."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          reject(new Error("Location permission denied. Please allow location access to check in."));
+        } else {
+          reject(new Error("Unable to get your location. Please try again."));
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  });
+}
+
+function StrictPopup({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-[#E7E8F0] bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+            <FiAlertCircle className="text-3xl text-red-500" />
+          </div>
+        </div>
+        <h2 className="mb-2 text-center text-base font-bold text-slate-900">
+          Entry Not Allowed
+        </h2>
+        <p className="mb-1 text-center text-sm text-slate-500">
+          Office entry opens at {officeEntryLabel()} only.
+        </p>
+        <p className="mb-6 text-center text-xs text-slate-400">
+          Please wait until {officeEntryLabel()} to mark your attendance.
+        </p>
+        <button type="button" onClick={onClose}
+          className="w-full rounded-xl bg-[#302568] py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d3080]">
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// GPS blocked popup
+function LocationPopup({ message, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-[#E7E8F0] bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+            <FiMapPin className="text-3xl text-red-500" />
+          </div>
+        </div>
+        <h2 className="mb-2 text-center text-base font-bold text-slate-900">Check-in Blocked</h2>
+        <p className="mb-6 text-center text-sm text-slate-500">{message}</p>
+        <button type="button" onClick={onClose}
+          className="w-full rounded-xl bg-[#302568] py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d3080]">
+          OK
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function LatePopup({ checkInTime, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-[#E7E8F0] bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
+            <FiAlertCircle className="text-3xl text-amber-500" />
+          </div>
+        </div>
+        <h2 className="mb-2 text-center text-base font-bold text-slate-900">
+          You are late
+        </h2>
+        <p className="mb-1 text-center text-sm text-slate-500">
+          Check-in after {lateEntryLabel()} is marked as late.
+        </p>
+        <p className="mb-6 text-center text-xs text-slate-400">
+          Your attendance is saved as Late{checkInTime ? ` at ${formatHHMM(checkInTime)}` : ""}.
+        </p>
+        <button type="button" onClick={onClose}
+          className="w-full rounded-xl bg-[#302568] py-2.5 text-sm font-semibold text-white transition hover:bg-[#3d3080]">
+          Got it
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const STATUS_STYLE = {
+  Present: "bg-green-50 text-green-700",
+  Absent:  "bg-red-50 text-red-600",
+  Leave:   "bg-blue-50 text-blue-700",
+  Late:    "bg-amber-50 text-amber-700",
+};
+
+function formatTime(value) {
+  if (!value) return "--";
+  const [hour = "0", minute = "00"] = String(value).split(":");
+  let hourNumber = Number(hour);
+  const ampm = hourNumber >= 12 ? "PM" : "AM";
+  hourNumber = hourNumber % 12 || 12;
+  return `${hourNumber}:${minute} ${ampm}`;
+}
+
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function formatDate(value) {
+  if (!value) return "-";
+  const date = new Date(`${value}T00:00:00`);
+  return date.toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric",
+  });
+}
+
+export default function EmployeeAttendance() {
+  const user = getStoredUser();
+
+  const [now,          setNow]          = useState(new Date());
+  const [checkedIn,    setCheckedIn]    = useState(false);
+  const [checkedOut,   setCheckedOut]   = useState(false);
+  const [entryTime,    setEntryTime]    = useState(null);
+  const [exitTime,     setExitTime]     = useState(null);
+  const [elapsed,      setElapsed]      = useState("00h 00m 00s");
+  const [popup,        setPopup]        = useState(null); // "entry" | "exit"
+  const [latePopup,    setLatePopup]    = useState(null);
+  const [locationMsg,  setLocationMsg]  = useState(null); // GPS error message
+  const [todayRecord,  setTodayRecord]  = useState(null);
+  const [records,      setRecords]      = useState([]);
+  const [saving,       setSaving]       = useState(false);
+  const [lateNote,     setLateNote]     = useState("");
+  const [gpsLoading,   setGpsLoading]   = useState(false);
+
+  const timerRef = useRef(null);
+
+  // Live clock
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Load attendance records
+  useEffect(() => {
+    const employeeId = user?.employeeId || user?.id || user?._id;
+    if (!employeeId) return;
+
+    getAttendanceByEmployee(employeeId)
+      .then((rows) => {
+        const todayKey      = localDateKey();
+        const currentRecord = rows.find((row) => row.date === todayKey);
+        setRecords(rows);
+
+        if (currentRecord) {
+          setTodayRecord(currentRecord);
+          setLateNote(currentRecord.lateNote || "");
+          setCheckedIn(Boolean(currentRecord.checkIn));
+          setCheckedOut(Boolean(currentRecord.checkOut));
+          if (currentRecord.checkIn) {
+            setEntryTime(new Date(`${todayKey}T${currentRecord.checkIn}:00`));
+          }
+          if (currentRecord.checkOut) {
+            setExitTime(new Date(`${todayKey}T${currentRecord.checkOut}:00`));
+          }
+          if (currentRecord.hours) {
+            setElapsed(`${currentRecord.hours}h`);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [user?.employeeId, user?.id, user?._id]);
+
+  // Running timer
+  useEffect(() => {
+    if (checkedIn && !checkedOut && entryTime) {
+      timerRef.current = setInterval(() => {
+        setElapsed(diffHHMMSS(entryTime, new Date()));
+      }, 1000);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [checkedIn, checkedOut, entryTime]);
+
+  const handleCheckIn = async () => {
+    if (!canEntry(now)) {
+      setPopup("entry");
+      return;
+    }
+
+    const t          = new Date();
+    const employeeId = user?.employeeId || user?.id || user?._id;
+
+    // GPS location fetch
+    setGpsLoading(true);
+    let coords;
+    try {
+      coords = await getCurrentLocation();
+    } catch (err) {
+      setGpsLoading(false);
+      setLocationMsg(err.message);
+      return;
+    }
+    setGpsLoading(false);
+
+    try {
+      setSaving(true);
+      const created = await markAttendance({
+        employee_id: employeeId,
+        date:        localDateKey(t),
+        checkIn:     `${pad(t.getHours())}:${pad(t.getMinutes())}`,
+        status:      "present",
+        lateNote:    lateNote.trim(),
+        latitude:    coords.latitude,
+        longitude:   coords.longitude,
+      });
+      setTodayRecord(created);
+      setRecords((current) => [created, ...current.filter((row) => row._id !== created._id)]);
+      setEntryTime(t);
+      setCheckedIn(true);
+      if (created.status === "Late" || isLateEntry(t)) {
+        setLatePopup(t);
+      }
+      toast.success("Attendance marked");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Check-in failed";
+      // GPS distance error — show location popup
+      if (err.response?.status === 403) {
+        setLocationMsg(msg);
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    if (!todayRecord?._id) return;
+    const t            = new Date();
+    const finalElapsed = diffHHMMSS(entryTime, t);
+
+    try {
+      setSaving(true);
+      const updated = await checkOutAttendance(todayRecord._id, {
+        checkOut: `${pad(t.getHours())}:${pad(t.getMinutes())}`,
+      });
+      setTodayRecord(updated);
+      setRecords((current) =>
+        current.map((row) => (row._id === updated._id ? updated : row))
+      );
+      setExitTime(t);
+      setCheckedOut(true);
+      clearInterval(timerRef.current);
+      setElapsed(finalElapsed);
+      toast.success("Checked out");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Check-out failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const statusLabel = checkedOut ? "Day Complete ✅" : checkedIn ? "Currently Working 🟢" : "Not Checked In";
+  const statusColor = checkedOut ? "text-green-600" : checkedIn ? "text-emerald-600" : "text-slate-400";
+  const entryOpen   = canEntry(now);
+
+  return (
+    <div className="min-h-screen bg-[#F6F7FB] px-4 py-8 sm:px-8">
+      {popup && <StrictPopup type={popup} onClose={() => setPopup(null)} />}
+      {latePopup && <LatePopup checkInTime={latePopup} onClose={() => setLatePopup(null)} />}
+      {locationMsg && <LocationPopup message={locationMsg} onClose={() => setLocationMsg(null)} />}
+
+      <div className="mx-auto max-w-3xl space-y-6">
+
+        {/* Page header */}
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Attendance</h1>
+          <p className="text-sm text-slate-400">
+            {now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          </p>
+        </div>
+
+        {/* Live clock card */}
+        <div className="rounded-2xl border border-[#E7E8F0] bg-white px-6 py-8 text-center shadow-sm">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-400">Current Time</p>
+          <p className="font-mono text-5xl font-bold tabular-nums text-slate-900">
+            {pad(now.getHours())}:{pad(now.getMinutes())}
+            <span className="text-3xl text-slate-400">:{pad(now.getSeconds())}</span>
+          </p>
+          <p className={`mt-3 text-sm font-semibold ${statusColor}`}>{statusLabel}</p>
+          <div className="mt-4 flex justify-center gap-4 text-xs">
+            <span className={`flex items-center gap-1 rounded-full px-3 py-1 font-semibold ${entryOpen ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+              {entryOpen ? <FiCheckCircle /> : <FiXCircle />} Entry: {officeEntryLabel()}
+            </span>
+            <span className="flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 font-semibold text-green-700">
+              <FiCheckCircle /> Exit: Anytime
+            </span>
+          </div>
+        </div>
+
+        {/* Check-in / Check-out cards */}
+        <div className="grid gap-4 sm:grid-cols-3">
+
+          {/* Entry */}
+          <div className="rounded-2xl border border-[#E7E8F0] bg-white p-5 text-center shadow-sm">
+            <FiLogIn className="mx-auto mb-2 text-2xl text-[#302568]" />
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Check In</p>
+            <p className="mt-1 text-lg font-bold text-slate-900">
+              {entryTime ? formatHHMM(entryTime) : "--:--"}
+            </p>
+            {!checkedIn && (
+              <>
+                {entryOpen && (
+                  <label className="mt-4 block text-left">
+                    <span className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                      <FiEdit3 className="text-[#302568]" /> Late login note
+                    </span>
+                    <textarea
+                      value={lateNote}
+                      onChange={(e) => setLateNote(e.target.value)}
+                      rows={3}
+                      maxLength={300}
+                      placeholder="If you arrived on time but forgot to check in, add the reason here."
+                      className="w-full resize-none rounded-xl border border-[#E0E3EC] bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#302568] focus:ring-2 focus:ring-[#302568]/10"
+                    />
+                  </label>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCheckIn}
+                  disabled={!entryOpen || saving || gpsLoading}
+                  className={[
+                    "mt-3 w-full rounded-xl py-2 text-sm font-semibold transition",
+                    entryOpen
+                      ? "bg-[#302568] text-white hover:bg-[#3d3080]"
+                      : "cursor-not-allowed bg-slate-100 text-slate-400",
+                  ].join(" ")}
+                >
+                  {gpsLoading
+                    ? "Getting location..."
+                    : saving
+                    ? "Saving..."
+                    : entryOpen
+                    ? "Mark Entry"
+                    : `Opens at ${officeEntryLabel()}`}
+                </button>
+
+                {/* GPS info note */}
+                {entryOpen && (
+                  <p className="mt-2 flex items-center justify-center gap-1 text-xs text-slate-400">
+                    <FiMapPin className="text-[#302568]" />
+                    Location will be verified
+                  </p>
+                )}
+              </>
+            )}
+            {checkedIn && (
+              <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                <FiCheckCircle /> Checked In
+              </span>
+            )}
+          </div>
+
+          {/* Timer */}
+          <div className="rounded-2xl border border-[#302568]/20 bg-[#F5F3FC] p-5 text-center shadow-sm">
+            <FiClock className="mx-auto mb-2 text-2xl text-[#302568]" />
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#302568]">
+              {checkedOut ? "Total Hours" : "Time Elapsed"}
+            </p>
+            <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-[#302568]">
+              {checkedIn ? elapsed : "00h 00m 00s"}
+            </p>
+            {!checkedIn && <p className="mt-2 text-xs text-slate-400">Timer starts on check-in</p>}
+            {checkedIn && !checkedOut && (
+              <span className="mt-2 inline-block animate-pulse rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                ● Live
+              </span>
+            )}
+            {checkedOut && (
+              <span className="mt-2 inline-block rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">
+                Completed
+              </span>
+            )}
+          </div>
+
+          {/* Exit */}
+          <div className="rounded-2xl border border-[#E7E8F0] bg-white p-5 text-center shadow-sm">
+            <FiLogOut className="mx-auto mb-2 text-2xl text-[#302568]" />
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Check Out</p>
+            <p className="mt-1 text-lg font-bold text-slate-900">
+              {exitTime ? formatHHMM(exitTime) : "--:--"}
+            </p>
+            {checkedIn && !checkedOut && (
+              <button
+                type="button"
+                onClick={handleCheckOut}
+                disabled={saving}
+                className={[
+                  "mt-3 w-full rounded-xl py-2 text-sm font-semibold transition",
+                  saving
+                    ? "cursor-not-allowed bg-slate-100 text-slate-400"
+                    : "bg-red-500 text-white hover:bg-red-600",
+                ].join(" ")}
+              >
+                {saving ? "Saving..." : "Mark Exit"}
+              </button>
+            )}
+            {!checkedIn && <p className="mt-3 text-xs text-slate-400">Check in first</p>}
+            {checkedOut && (
+              <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                <FiCheckCircle /> Checked Out
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Warning banners */}
+        {!entryOpen && !checkedIn && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+            <FiAlertCircle className="mt-0.5 shrink-0 text-red-500" />
+            <div>
+              <p className="text-sm font-semibold text-red-700">Entry not open yet</p>
+              <p className="text-xs text-red-500">
+                Office entry opens at <strong>{officeEntryLabel()}</strong>. {minutesUntilEntry(now)} minute(s) remaining.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {checkedOut && (
+          <div className="flex items-start gap-3 rounded-xl border border-green-100 bg-green-50 px-4 py-3">
+            <FiCheckCircle className="mt-0.5 shrink-0 text-green-600" />
+            <div>
+              <p className="text-sm font-semibold text-green-700">
+                Great work today, {user?.name?.split(" ")[0] || "Employee"}! 🎉
+              </p>
+              <p className="text-xs text-green-600">
+                You worked for <strong>{elapsed}</strong> today. See you tomorrow!
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Past attendance table */}
+        <div className="rounded-2xl border border-[#E7E8F0] bg-white shadow-sm">
+          <div className="flex items-center gap-2 border-b border-[#E7E8F0] px-5 py-4">
+            <FiCalendar className="text-[#302568]" />
+            <p className="font-semibold text-slate-900">This Week's Attendance</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#F0F0F5] bg-[#FAFAFD] text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3">Entry</th>
+                  <th className="px-5 py-3">Exit</th>
+                  <th className="px-5 py-3">Hours</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Note</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F0F0F5]">
+                {records.map((r) => (
+                  <tr key={r.date} className="hover:bg-[#FAFAFE]">
+                    <td className="px-5 py-3 font-medium text-slate-700">
+                      {r.entry ? r.date : formatDate(r.date)}
+                    </td>
+                    <td className="px-5 py-3 text-slate-500">{r.entry || formatTime(r.checkIn)}</td>
+                    <td className="px-5 py-3 text-slate-500">{r.exit || formatTime(r.checkOut)}</td>
+                    <td className="px-5 py-3 font-semibold text-slate-700">{r.hours || "--"}</td>
+                    <td className="px-5 py-3">
+                      <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${STATUS_STYLE[r.status] || "bg-slate-50 text-slate-500"}`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      {r.lateNote ? (
+                        <p className="max-w-xs rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium leading-relaxed text-amber-700">
+                          {r.lateNote}
+                        </p>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {records.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="px-5 py-10 text-center text-sm text-slate-400">
+                      No attendance records found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

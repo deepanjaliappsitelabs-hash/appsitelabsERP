@@ -1,0 +1,184 @@
+@import "tailwindcss";
+@import "@fontsource/inter";
+
+/* ── Brand tokens ─────────────────────────────────────────────────────────── */
+:root {
+  /* Primary */
+  --asl-primary:        #302568;   /* deep indigo — buttons, active states    */
+  --asl-primary-mid:    #7560A7;   /* mid purple — accents, focus borders      */
+  --asl-primary-soft:   #EDE8F5;   /* tint — icon bg, badge bg, hover fills   */
+  --asl-primary-wash:   #F3F0FA;   /* very light — table head, input focus bg */
+
+  /* Accent */
+  --asl-accent:         #20b8d9;
+
+  /* Page / Surface */
+  --asl-page:           #f6f7fb;
+  --asl-surface:        #ffffff;
+
+  /* Borders */
+  --asl-border:         #e7e8f0;
+  --asl-border-inner:   #eceef5;
+  --asl-border-input:   #e0e3ec;
+
+  /* Text */
+  --asl-text:           #111827;
+  --asl-muted:          #6b7280;
+  --asl-placeholder:    #9ca3af;
+
+  /* Shadows — tinted with primary for that premium feel */
+  --asl-shadow-card:    0 14px 40px rgba(48, 37, 104, 0.07);
+  --asl-shadow-modal:   0 24px 70px rgba(48, 37, 104, 0.18);
+  --asl-shadow-button:  0 1px 3px  rgba(48, 37, 104, 0.35);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: "Inter", sans-serif;
+  background: var(--asl-page);
+  color: var(--asl-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--asl-primary-soft);
+  color: var(--asl-primary);
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--asl-page); }
+::-webkit-scrollbar-thumb {
+  background: var(--asl-primary-mid);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--asl-primary); }
+
+/* ── Focus ────────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--asl-primary-mid);
+  outline-offset: 2px;
+}
+
+@keyframes notificationBellBlink {
+  0%, 100% {
+    background: transparent;
+    box-shadow: none;
+    transform: scale(1);
+  }
+  20%, 60% {
+    background: var(--asl-primary-soft);
+    box-shadow: 0 0 0 7px rgba(86, 199, 242, 0.18);
+    transform: scale(1.08);
+  }
+  40%, 80% {
+    background: rgba(86, 199, 242, 0.16);
+    box-shadow: 0 0 0 12px rgba(48, 37, 104, 0.08);
+    transform: scale(1);
+  }
+}
+
+@keyframes notificationBadgeBlink {
+  0%, 100% { transform: scale(1); }
+  50% {
+    background: var(--asl-primary);
+    transform: scale(1.2);
+  }
+}
+
+.notification-bell-blink {
+  animation: notificationBellBlink 0.8s ease-in-out 4;
+}
+
+.notification-badge-blink {
+  animation: notificationBadgeBlink 0.8s ease-in-out 4;
+}
+
+/* ── Utility classes ──────────────────────────────────────────────────────── */
+@layer utilities {
+  .bg-asl-page          { background-color: var(--asl-page); }
+  .bg-asl-surface       { background-color: var(--asl-surface); }
+  .bg-asl-primary       { background-color: var(--asl-primary); }
+  .bg-asl-primary-mid   { background-color: var(--asl-primary-mid); }
+  .bg-asl-primary-soft  { background-color: var(--asl-primary-soft); }
+  .bg-asl-primary-wash  { background-color: var(--asl-primary-wash); }
+
+  .text-asl-primary     { color: var(--asl-primary); }
+  .text-asl-primary-mid { color: var(--asl-primary-mid); }
+  .text-asl-muted       { color: var(--asl-muted); }
+
+  .border-asl-border    { border-color: var(--asl-border); }
+  .border-asl-inner     { border-color: var(--asl-border-inner); }
+  .border-asl-input     { border-color: var(--asl-border-input); }
+
+  .shadow-asl-card      { box-shadow: var(--asl-shadow-card); }
+  .shadow-asl-modal     { box-shadow: var(--asl-shadow-modal); }
+  .shadow-asl-button    { box-shadow: var(--asl-shadow-button); }
+}
+
+/* ── Invoice Print ───────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .invoice-print-area,
+  .invoice-print-area * {
+    visibility: visible !important;
+  }
+
+  .invoice-print-area {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 186mm !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    border: 1px solid #d8dee9 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .invoice-print-area .no-print,
+  .invoice-print-area .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  .invoice-print-area .flex-1 {
+    padding: 7mm !important;
+  }
+
+  .invoice-print-area h1 {
+    font-size: 24px !important;
+    line-height: 1.15 !important;
+  }
+
+  .invoice-print-area table {
+    page-break-inside: avoid !important;
+  }
+
+  .invoice-print-area tr,
+  .invoice-print-area .rounded-xl {
+    page-break-inside: avoid !important;
+  }
+}
